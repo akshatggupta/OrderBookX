@@ -104,15 +104,15 @@ void OrderBook:: matchSell(double price , int quantity){
 
 
 
-void OrderBook::addOrder(Side side, double price, int quantity)
+void OrderBook::addOrder(Event event)
 {
-    if (side == BUY)
+    if (event.side == Side::BUY)
     {
-        matchBuy(price, quantity);
+        matchBuy(event.price, event.quantity);
     }
     else
     {
-        matchSell(price, quantity);
+        matchSell(event.price, event.quantity);
     }
 }
 

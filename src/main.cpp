@@ -1,18 +1,48 @@
+#include <iostream>
+#include <string>
+
+#include "../include/parser.hpp"
 #include "../include/orderbook.hpp"
 
-int main() {
-
+int main()
+{
+    Parser parser;
     OrderBook book;
 
-    book.updateBid(100, 5);
-    book.updateBid(101, 3);
-    book.updateBid(102, 2);
+    std::string line;
 
-    book.updateAsk(103, 1);
-    book.updateAsk(104, 2);
-    book.updateAsk(105, 4);
+    std::cout << "===== OrderBookX =====" << std::endl;
+    std::cout << "Enter orders in the format:" << std::endl;
+    std::cout << "BUY 100 5" << std::endl;
+    std::cout << "SELL 101 3" << std::endl;
+    std::cout << "Type EXIT to quit.\n" << std::endl;
 
-    book.printBook();
+    while (true)
+    {
+        std::cout << "> ";
+
+        std::getline(std::cin, line);
+
+        if (line == "EXIT")
+            break;
+
+        try
+        {
+            Event event = parser.parse(line);
+
+            book.addOrder(event);
+
+            std::cout << "\nUpdated Order Book\n";
+            book.printBook();
+            std::cout << std::endl;
+        }
+        catch (const std::exception &e)
+        {
+            std::cout << "Error : " << e.what() << std::endl;
+        }
+    }
+
+    std::cout << "Program terminated." << std::endl;
 
     return 0;
 }
