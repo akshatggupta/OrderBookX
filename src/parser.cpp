@@ -11,7 +11,7 @@ Event Parser::parse(const std::string& line)
     ss>>side>>price>>quantity;
 
 
-    Event evnet;
+    Event event;
     if(side == "BUY"){
         event.side = Side::Buy;
     }

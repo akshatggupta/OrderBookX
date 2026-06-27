@@ -1,112 +1,121 @@
 #include "../include/orderbook.hpp"
+
 #include <iostream>
 #include <algorithm>
-#include<iostream>
+#include <stdexcept>
 
-void OrderBook::updateBid(double price, double quantity){
-    if (quantity == 0){
+void OrderBook::updateBid(double price, double quantity)
+{
+    if (quantity == 0)
         bids.erase(price);
-    }
-    else{
+    else
         bids[price] = quantity;
-    }
 }
 
-
-void OrderBook::updateAsk(double price, double quantity){
-    if(quantity == 0){
+void OrderBook::updateAsk(double price, double quantity)
+{
+    if (quantity == 0)
         asks.erase(price);
-
-    }
-    else{
+    else
         asks[price] = quantity;
-    }
 }
 
-void OrderBook:: printBook()const{
+void OrderBook::printBook(int depth)
+{
+    std::cout << "\n========== ORDER BOOK ==========\n";
+
     std::cout << "\nASKS\n";
 
-    for (const auto& [price, quantity] : asks) {
-        std::cout << price << " : " << quantity << '\n';
+    int count = 0;
+
+    for (const auto &ask : asks)
+    {
+        if (count == depth)
+            break;
+
+        std::cout << ask.first << " -> " << ask.second << '\n';
+        count++;
     }
 
-    std::cout << "-----------------\n";
+    std::cout << "\n---------------------------\n";
 
-    std::cout << "BIDS\n";
+    std::cout << "\nBIDS\n";
 
-    for (const auto& [price, quantity] : bids) {
-        std::cout << price << " : " << quantity << '\n';
+    count = 0;
+
+    for (const auto &bid : bids)
+    {
+        if (count == depth)
+            break;
+
+        std::cout << bid.first << " -> " << bid.second << '\n';
+        count++;
     }
+
+    std::cout << "===============================\n";
 }
 
-
-void OrderBook:: matchBuy(double price, int quatity){
-    while (
-        quantity >0 &&
-        !asks.empty()&&
-        asks.begin()-> first <= price
-    )
-
+void OrderBook::matchBuy(double price, double quantity)
+{
+    while (quantity > 0 &&
+           !asks.empty() &&
+           asks.begin()->first <= price)
     {
         auto bestAsk = asks.begin();
-        int tradeQty = std::min(quantity, bestAsk->second);
 
-        std::cout << "TRADE"
+        double tradeQty = std::min(quantity, bestAsk->second);
+
+        std::cout << "TRADE "
                   << tradeQty
-                  << "@"
-                  <<bestAsk->first
-                  <<std::endl;
+                  << " @ "
+                  << bestAsk->first
+                  << '\n';
 
         quantity -= tradeQty;
         bestAsk->second -= tradeQty;
-        if (bestAsk->second==0){
+
+        if (bestAsk->second == 0)
             asks.erase(bestAsk);
-
-        }
-
     }
-    if (quantity>0){
-        bids[price]+=quantity;
+
+    if (quantity > 0)
+    {
+        updateBid(price, bids[price] + quantity);
     }
 }
 
-
-void OrderBook:: matchSell(double price , int quantity){
-    while(
-        quantity >0 &&
-        !bids.empty() &&
-        bids.begin()-> first >=price
-    )
-
+void OrderBook::matchSell(double price, double quantity)
+{
+    while (quantity > 0 &&
+           !bids.empty() &&
+           bids.begin()->first >= price)
     {
         auto bestBid = bids.begin();
-        int tradeQty = std::min(quantity, bestbid->second);
 
+        double tradeQty = std::min(quantity, bestBid->second);
 
-        std::cout <<"TRADE"
+        std::cout << "TRADE "
                   << tradeQty
-                  << "@"
-                  <<bestbid->first
-                  <<std::endl;
+                  << " @ "
+                  << bestBid->first
+                  << '\n';
 
         quantity -= tradeQty;
         bestBid->second -= tradeQty;
-        if (bestBid->second==0){
+
+        if (bestBid->second == 0)
             bids.erase(bestBid);
-
-        }
-
-    }
-    if (quantity>0){
-        asks[price] += quantity;
-    }
     }
 
-
+    if (quantity > 0)
+    {
+        updateAsk(price, asks[price] + quantity);
+    }
+}
 
 void OrderBook::addOrder(Event event)
 {
-    if (event.side == Side::BUY)
+    if (event.side == Side::Buy)
     {
         matchBuy(event.price, event.quantity);
     }
@@ -116,24 +125,29 @@ void OrderBook::addOrder(Event event)
     }
 }
 
-
-void OrderBook::printBook() const
+double OrderBook::bestBid()
 {
-    std::cout << "\n========== ORDER BOOK ==========\n";
-
-    std::cout << "\nASKS\n";
-    for (const auto &[price, quantity] : asks)
+    if (bids.empty())
     {
-        std::cout << price << " : " << quantity << '\n';
+        throw std::runtime_error("No bids in book");
     }
 
-    std::cout << "\n-------------------------------\n";
+    return bids.begin()->first;
+}
 
-    std::cout << "\nBIDS\n";
-    for (const auto &[price, quantity] : bids)
+
+double OrderBook::bestAsk()
+{
+    if (asks.empty())
     {
-        std::cout << price << " : " << quantity << '\n';
+        throw std::runtime_error("No asks in book");
     }
 
-    std::cout << "================================\n";
+    return asks.begin()->first;
+}
+
+
+double OrderBook::spread()
+{
+    return bestAsk() - bestBid();
 }

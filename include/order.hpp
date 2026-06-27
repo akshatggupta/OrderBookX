@@ -1,27 +1,27 @@
-#pragma  once
+#pragma once
+
 #include <map>
 #include <functional>
+#include "event.hpp"
 
-enum class side{
-    BID,
-    ASK
-};
+class OrderBook
+{
+private:
+    std::map<double, double, std::greater<double>> bids;
+    std::map<double, double> asks;
 
-struct Order{
-    double price;
-    double quantity;
-    side side;
+public:
+    void updateBid(double price, double quantity);
+    void updateAsk(double price, double quantity);
 
-};
+    void addOrder(Event event);
 
-class Orderbook{
-    public:
-        void updatebit(double price, double quantity);
-        void updateAsk(double price, double quantity);
-        void printBook() const;
+    void matchBuy(double price, double quantity);
+    void matchSell(double price, double quantity);
 
-    private:
-        std::map<double, double, std::greater<double>> bids;
-        std::map<double,double>;
+    void printBook(int depth = 5);
 
+    double bestBid();
+    double bestAsk();
+    double spread();
 };
