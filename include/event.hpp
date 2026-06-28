@@ -1,10 +1,10 @@
 #pragma once 
 #include <string>
 
-enum class Sid{
+enum class Side{
     Buy,
     Sell
-}
+};
 
 struct Event{
     Side side;

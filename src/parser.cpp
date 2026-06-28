@@ -5,6 +5,7 @@
 Event Parser::parse(const std::string& line)
 {
     std::stringstream ss(line);
+    std::string side;      
     double price;
     double quantity;
 

@@ -113,7 +113,7 @@ void OrderBook::matchSell(double price, double quantity)
     }
 }
 
-void OrderBook::addOrder(Event event)
+void OrderBook::addOrder(const Event &event)
 {
     if (event.side == Side::Buy)
     {

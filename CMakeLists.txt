@@ -9,4 +9,5 @@ add_executable(
     orderbookx
     src/main.cpp
     src/orderbook.cpp
+    src/parser.cpp
 )
