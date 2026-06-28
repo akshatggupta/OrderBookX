@@ -197,3 +197,108 @@ void OrderBook::printBook(int depth) const
 
     cout << "==================================================\n";
 }
+
+double OrderBook::totalBidVolume(int depth) const
+{
+    double totalVolume = 0.0;
+    int count = 0;
+
+    for (const auto &bid : bids)
+    {
+        if (count >= depth)
+            break;
+
+        totalVolume += bid.second;
+        count++;
+    }
+
+    return totalVolume;
+}
+
+double OrderBook::totalAskVolume(int depth) const
+{
+    double totalVolume = 0.0;
+    int count = 0;
+
+    for (const auto &ask : asks)
+    {
+        if (count >= depth)
+            break;
+
+        totalVolume += ask.second;
+        count++;
+    }
+
+    return totalVolume;
+}
+
+double OrderBook::imbalance(int depth) const
+{
+    double bidVolume = totalBidVolume(depth);
+    double askVolume = totalAskVolume(depth);
+
+    double totalVolume = bidVolume + askVolume;
+
+    if (totalVolume == 0.0)
+    {
+        return 0.0;
+    }
+
+    return (bidVolume - askVolume) / totalVolume;
+}
+
+double OrderBook:: askVWAP(int depth) const{
+    double weightedPrice = 0.0;
+    double totalVolume = 0.0;
+    int count = 0.0;
+
+    int count = 0;
+
+    for (const auto &ask : asks)
+    {
+        if (count >= depth)
+            break;
+
+        weightedPrice += ask.first * ask.second;
+        totalVolume += ask.second;
+
+        count++;
+    }
+
+    if (totalVolume == 0.0)
+        return 0.0;
+
+    return weightedPrice / totalVolume;
+}
+
+std::pair<double, double> OrderBook::largestBidOrder() const
+{
+    if (bids.empty())
+        return {0.0, 0.0};
+
+    auto largest = bids.begin();
+
+    for (auto it = bids.begin(); it != bids.end(); ++it)
+    {
+        if (it->second > largest->second)
+            largest = it;
+    }
+
+    return {largest->first, largest->second};
+}
+
+std::pair<double, double> OrderBook::largestAskOrder() const
+{
+    if (asks.empty())
+        return {0.0, 0.0};
+
+    auto largest = asks.begin();
+
+    for (auto it = asks.begin(); it != asks.end(); ++it)
+    {
+        if (it->second > largest->second)
+            largest = it;
+    }
+
+    return {largest->first, largest->second};
+}
