@@ -3,7 +3,11 @@
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
+#include <vector>
+#include "trade.hpp"
+#include "../include/trade.hpp"
 
 void OrderBook::updateBid(double price, double quantity)
 {
@@ -21,6 +25,18 @@ void OrderBook::updateAsk(double price, double quantity)
         asks[price] = quantity;
 }
 
+
+void OrderBook::recordTrade(double price, double quantity)
+{
+    tradeHistory.emplace_back(price, quantity);
+}
+
+void OrderBook::recordEvent(EventType type,
+                            const std::string &description)
+{
+    eventLog.emplace_back(type, description);
+}
+
 void OrderBook::matchBuy(double price, double quantity)
 {
     while (quantity > 0 &&
@@ -30,6 +46,15 @@ void OrderBook::matchBuy(double price, double quantity)
         auto bestAsk = asks.begin();
 
         double tradeQty = std::min(quantity, bestAsk->second);
+
+        recordTrade(bestAsk->first, tradeQty);
+
+        recordEvent(
+            EventType::TRADE_EXECUTED,
+            "Trade executed at " +
+            std::to_string(bestAsk->first) +
+            " Qty " +
+            std::to_string(tradeQty));
 
         std::cout << "TRADE "
                   << tradeQty
@@ -60,6 +85,15 @@ void OrderBook::matchSell(double price, double quantity)
 
         double tradeQty = std::min(quantity, bestBid->second);
 
+        recordTrade(bestBid->first, tradeQty);
+
+        recordEvent(
+            EventType::TRADE_EXECUTED,
+            "Trade executed at " +
+            std::to_string(bestBid->first) +
+            " Qty " +
+            std::to_string(tradeQty));
+
         std::cout << "TRADE "
                   << tradeQty
                   << " @ "
@@ -81,10 +115,31 @@ void OrderBook::matchSell(double price, double quantity)
 
 void OrderBook::addOrder(const Event &event)
 {
+    recordEvent(
+        EventType::NEW_ORDER,
+        (event.side == Side::Buy ? "BUY " : "SELL ") +
+        std::to_string(event.quantity) +
+        " @ " +
+        std::to_string(event.price));
+
     if (event.side == Side::Buy)
         matchBuy(event.price, event.quantity);
     else
         matchSell(event.price, event.quantity);
+
+    recordEvent(
+        EventType::BOOK_UPDATED,
+        "Book updated");
+}
+
+const std::vector<Trade>& OrderBook::getTradeHistory() const
+{
+    return tradeHistory;
+}
+
+const std::vector<EventLog>& OrderBook::getEventLog() const
+{
+    return eventLog;
 }
 
 double OrderBook::bestBid() const
@@ -250,7 +305,6 @@ double OrderBook::imbalance(int depth) const
 double OrderBook:: askVWAP(int depth) const{
     double weightedPrice = 0.0;
     double totalVolume = 0.0;
-    int count = 0.0;
 
     int count = 0;
 
@@ -271,6 +325,28 @@ double OrderBook:: askVWAP(int depth) const{
     return weightedPrice / totalVolume;
 }
 
+double OrderBook::bidVWAP(int depth) const
+{
+    double weightedPrice = 0.0;
+    double totalVolume = 0.0;
+    int count = 0;
+
+    for (const auto &bid : bids)
+    {
+        if (count >= depth)
+            break;
+
+        weightedPrice += bid.first * bid.second;
+        totalVolume += bid.second;
+
+        count++;
+    }
+
+    if (totalVolume == 0.0)
+        return 0.0;
+
+    return weightedPrice / totalVolume;
+}
 std::pair<double, double> OrderBook::largestBidOrder() const
 {
     if (bids.empty())
@@ -301,4 +377,65 @@ std::pair<double, double> OrderBook::largestAskOrder() const
     }
 
     return {largest->first, largest->second};
+}
+
+
+MarketDataSnapshot OrderBook::getSnapshot() const
+{
+    MarketDataSnapshot snapshot;
+
+    if (!bids.empty())
+        snapshot.bestBid = bids.begin()->first;
+
+    if (!asks.empty())
+        snapshot.bestAsk = asks.begin()->first;
+
+    if (!bids.empty() && !asks.empty())
+    {
+        snapshot.spread = snapshot.bestAsk - snapshot.bestBid;
+        snapshot.midPrice = (snapshot.bestAsk + snapshot.bestBid) / 2.0;
+    }
+
+    snapshot.totalBidVolume = totalBidVolume();
+    snapshot.totalAskVolume = totalAskVolume();
+    snapshot.imbalance = imbalance();
+    snapshot.bidVWAP = bidVWAP();
+    snapshot.askVWAP = askVWAP();
+
+    if (!tradeHistory.empty())
+        snapshot.lastTradePrice = tradeHistory.back().price;
+
+    return snapshot;
+}
+
+void OrderBook::printTradeHistory() const
+{
+    std::cout << "\n===== Trade History =====\n";
+
+    if (tradeHistory.empty())
+    {
+        std::cout << "No trades executed.\n";
+        return;
+    }
+
+    for (const auto &trade : tradeHistory)
+    {
+        std::cout
+            << trade.price
+            << " | "
+            << trade.quantity
+            << '\n';
+    }
+}
+
+void OrderBook::printEventLog() const
+{
+    std::cout << "\n===== Event Log =====\n";
+
+    for (const auto &event : eventLog)
+    {
+        std::cout
+            << event.description
+            << '\n';
+    }
 }
